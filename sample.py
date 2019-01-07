@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
+import sys
 import dbus.mainloop.glib
-try:
-  from gi.repository import GObject
-except ImportError:
-  import gobject as GObject
-
+import argparse
+from gi.repository import GObject
 from bpb import BPB
 
 def print_compact(address, properties):
@@ -46,15 +44,18 @@ def print_normal(address, properties):
 	properties["Logged"] = True
 
 def cb(key, value):
-	print(key)
-	print_normal(value['address'], value['devices'])
-
+	print_compact(value['address'], value['devices'])
 
 def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bpb = BPB(cb)
-	bpb.scan()
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-s', '--scan', help='start discovery', action='store_true')
+	args = parser.parse_args()
+	if (args.scan) :
+		bpb.scan('on')
 
 	mainloop = GObject.MainLoop()
 	mainloop.run()

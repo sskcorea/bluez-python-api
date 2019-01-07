@@ -80,7 +80,7 @@ class BPB:
 		}
 		self.callback('PROPERTY', data)
 
-	def scan(self):
+	def scan(self, onoff):
 		adapter = bluezutils.find_adapter(0)
 
 		om = dbus.Interface(self.bus.get_object("org.bluez", "/"),
@@ -90,4 +90,7 @@ class BPB:
 			if "org.bluez.Device1" in interfaces:
 				self.devices[path] = interfaces["org.bluez.Device1"]
 
-		adapter.StartDiscovery()
+		if (onoff == 'on'):
+			adapter.StartDiscovery()
+		elif (onoff == 'off'):
+			adapter.StopDiscovery()
