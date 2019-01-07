@@ -2,14 +2,18 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import dbus
 import bluezutils
+from Advertisement import Advertisement
 
 # Bluez Python Bindings
 class BPB:
+	# Class variables
 	devices = {}
 	data = {}
 	
 	def __init__(self, callback):
+		# Instance variables
 		self.bus = dbus.SystemBus()
+		self.adapter = bluezutils.find_adapter(0)
 		self.callback = callback
 
 		self.bus.add_signal_receiver(self._interfaces_added,
@@ -80,17 +84,49 @@ class BPB:
 		}
 		self.callback('PROPERTY', data)
 
-	def scan(self, onoff):
-		adapter = bluezutils.find_adapter(0)
+	def start_scan(self):
+		proxy = self.bus.get_object("org.bluez", "/")
+		om_interface = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager")
+		objects = om_interface.GetManagedObjects()
 
-		om = dbus.Interface(self.bus.get_object("org.bluez", "/"),
-					"org.freedesktop.DBus.ObjectManager")
-		objects = om.GetManagedObjects()
 		for path, interfaces in objects.iteritems():
 			if "org.bluez.Device1" in interfaces:
 				self.devices[path] = interfaces["org.bluez.Device1"]
 
-		if (onoff == 'on'):
-			adapter.StartDiscovery()
-		elif (onoff == 'off'):
-			adapter.StopDiscovery()
+		self.adapter.StartDiscovery()
+
+	def _register_ad_cb(self):
+		data = {
+			'message': 'Advertisement registered',
+		}
+		self.callback('ADVERTISEMENT', data)
+
+
+	def _register_ad_error_cb(self, error):
+		data = {
+			'message': 'Failed to register advertisement: ' + str(error), 
+		}
+		self.callback('ADVERTISEMENT', data)
+
+	def start_adv(self, adv):
+		advertisement = Advertisement(self.bus, 0, adv['type'])
+		advertisement.add_service_uuid('180D')
+		advertisement.add_service_uuid('180F')
+		# advertisement.add_manufacturer_data(0xffff, [0x00, 0x01, 0x02, 0x03, 0x04])
+		# advertisement.add_service_data('9999', [0x00, 0x01, 0x02, 0x03, 0x04])
+		advertisement.include_tx_power = adv['tx_power']
+
+		proxy = self.bus.get_object('org.bluez', '/')
+		om_interface = dbus.Interface(proxy, 'org.freedesktop.DBus.ObjectManager')
+		objects = om_interface.GetManagedObjects()
+
+		for path, interfaces in objects.iteritems():
+			if 'org.bluez.LEAdvertisingManager1' in interfaces:
+				hcix = path # /org/bluez/hci0
+
+		hci_proxy = self.bus.get_object('org.bluez', hcix)
+		ad_interface = dbus.Interface(hci_proxy, 'org.bluez.LEAdvertisingManager1')
+
+		ad_interface.RegisterAdvertisement(advertisement.get_path(), {},
+			reply_handler=self._register_ad_cb,
+			error_handler=self._register_ad_error_cb)

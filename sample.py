@@ -44,7 +44,10 @@ def print_normal(address, properties):
 	properties["Logged"] = True
 
 def cb(key, value):
-	print_compact(value['address'], value['devices'])
+	if (key == 'PROPERTY' or key == 'SCAN'):
+		print_compact(value['address'], value['devices'])
+	elif (key == 'ADVERTISEMENT'):
+		print(value['message'])
 
 def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -53,9 +56,25 @@ def main():
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-s', '--scan', help='start discovery', action='store_true')
+	parser.add_argument('-a', '--advertise', help='start advertising', action='store_true')
 	args = parser.parse_args()
-	if (args.scan) :
-		bpb.scan('on')
+	if (args.scan):
+		bpb.start_scan()
+	elif (args.advertise):
+		adv = {
+			'type': 'peripheral',
+			'service_uuid': ['180D', '180F'],
+			'manufacturer_data': {
+				'code': 0xffff,
+				'data': [0x00, 0x01, 0x02, 0x03, 0x04]
+			},
+			'service_data': {
+				'uuid': '9999',
+				'data': [0x00, 0x01, 0x02, 0x03, 0x04]
+			},
+			'tx_power': True
+		}
+		bpb.start_adv(adv)
 
 	mainloop = GObject.MainLoop()
 	mainloop.run()
