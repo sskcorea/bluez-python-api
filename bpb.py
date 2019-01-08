@@ -26,14 +26,14 @@ class BPB:
 			arg0 = "org.bluez.Device1",
 			path_keyword = "path")
 
-	def _skip_dev(old_dev, new_dev):
-		if not "Logged" in old_dev:
-			return False
-		if "Name" in old_dev:
-			return True
-		if not "Name" in new_dev:
-			return True
-		return False
+	# def _skip_dev(old_dev, new_dev):
+	# 	if not "Logged" in old_dev:
+	# 		return False
+	# 	if "Name" in old_dev:
+	# 		return True
+	# 	if not "Name" in new_dev:
+	# 		return True
+	# 	return False
 
 	def _interfaces_added(self, path, interfaces):
 		properties = interfaces["org.bluez.Device1"]
@@ -43,8 +43,8 @@ class BPB:
 		if path in self.devices:
 			dev = self.devices[path]
 
-			if compact and _skip_dev(dev, properties):
-				return
+			# if compact and _skip_dev(dev, properties):
+			# 	return
 			self.devices[path] = dict(self.devices[path].items() + properties.items())
 		else:
 			self.devices[path] = properties
@@ -110,10 +110,14 @@ class BPB:
 
 	def start_adv(self, adv):
 		advertisement = Advertisement(self.bus, 0, adv['type'])
-		advertisement.add_service_uuid('180D')
-		advertisement.add_service_uuid('180F')
-		# advertisement.add_manufacturer_data(0xffff, [0x00, 0x01, 0x02, 0x03, 0x04])
-		# advertisement.add_service_data('9999', [0x00, 0x01, 0x02, 0x03, 0x04])
+		for uuid in adv['service_uuid']:
+			advertisement.add_service_uuid(uuid)
+		advertisement.add_manufacturer_data(
+			adv['manufacturer_data']['code'],
+			adv['manufacturer_data']['data'])
+		advertisement.add_service_data(
+			adv['service_data']['uuid'],
+			adv['service_data']['data'])
 		advertisement.include_tx_power = adv['tx_power']
 
 		proxy = self.bus.get_object('org.bluez', '/')

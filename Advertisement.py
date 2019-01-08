@@ -11,7 +11,9 @@ class Advertisement(dbus.service.Object):
 		self.manufacturer_data = None
 		self.solicit_uuids = None
 		self.service_data = None
+		self.local_name = None
 		self.include_tx_power = None
+		self.data = None
 		dbus.service.Object.__init__(self, bus, self.path)
 
 	def get_properties(self):
@@ -25,12 +27,18 @@ class Advertisement(dbus.service.Object):
 													signature='s')
 		if self.manufacturer_data is not None:
 			properties['ManufacturerData'] = dbus.Dictionary(
-				self.manufacturer_data, signature='qay')
+				self.manufacturer_data, signature='qv')
 		if self.service_data is not None:
 			properties['ServiceData'] = dbus.Dictionary(self.service_data,
-														signature='say')
+														signature='sv')
+		if self.local_name is not None:
+			properties['LocalName'] = dbus.String(self.local_name)
 		if self.include_tx_power is not None:
 			properties['IncludeTxPower'] = dbus.Boolean(self.include_tx_power)
+
+		if self.data is not None:
+			properties['Data'] = dbus.Dictionary(
+				self.data, signature='yv')
 		return {'org.bluez.LEAdvertisement1': properties}
 
 	def get_path(self):
@@ -48,26 +56,36 @@ class Advertisement(dbus.service.Object):
 
 	def add_manufacturer_data(self, manuf_code, data):
 		if not self.manufacturer_data:
-			self.manufacturer_data = dict()
-		self.manufacturer_data[manuf_code] = data
+			self.manufacturer_data = dbus.Dictionary({}, signature='qv')
+		self.manufacturer_data[manuf_code] = dbus.Array(data, signature='y')
 
 	def add_service_data(self, uuid, data):
 		if not self.service_data:
-			self.service_data = dict()
-		self.service_data[uuid] = data
+			self.service_data = dbus.Dictionary({}, signature='sv')
+		self.service_data[uuid] = dbus.Array(data, signature='y')
+
+	def add_local_name(self, name):
+		if not self.local_name:
+			self.local_name = ""
+		self.local_name = dbus.String(name)
+
+	def add_data(self, ad_type, data):
+		if not self.data:
+			self.data = dbus.Dictionary({}, signature='yv')
+		self.data[ad_type] = dbus.Array(data, signature='y')
 
 	@dbus.service.method('org.freedesktop.DBus.Properties',
 						 in_signature='s',
 						 out_signature='a{sv}')
 	def GetAll(self, interface):
-		print 'GetAll'
+		print('GetAll')
 		if interface != 'org.bluez.LEAdvertisement1':
 			raise InvalidArgsException()
-		print 'returning props'
+		print('returning props')
 		return self.get_properties()['org.bluez.LEAdvertisement1']
 
 	@dbus.service.method('org.bluez.LEAdvertisement1',
 						 in_signature='',
 						 out_signature='')
 	def Release(self):
-		print '%s: Released!' % self.path
+		print('%s: Released!' % self.path)

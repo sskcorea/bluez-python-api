@@ -72,7 +72,9 @@ def main():
 				'uuid': '9999',
 				'data': [0x00, 0x01, 0x02, 0x03, 0x04]
 			},
-			'tx_power': True
+			'local_name': 'bpb',
+			'tx_power': True,
+			'data': [0x26, [0x01, 0x01, 0x00]],
 		}
 		bpb.start_adv(adv)
 
