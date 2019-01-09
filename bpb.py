@@ -9,7 +9,8 @@ class BPB:
 	# Class variables
 	devices = {}
 	data = {}
-	
+	advertisements = []
+
 	def __init__(self, callback):
 		# Instance variables
 		self.bus = dbus.SystemBus()
@@ -25,15 +26,7 @@ class BPB:
 			signal_name = "PropertiesChanged",
 			arg0 = "org.bluez.Device1",
 			path_keyword = "path")
-
-	# def _skip_dev(old_dev, new_dev):
-	# 	if not "Logged" in old_dev:
-	# 		return False
-	# 	if "Name" in old_dev:
-	# 		return True
-	# 	if not "Name" in new_dev:
-	# 		return True
-	# 	return False
+		self.advertisements = [None] * self._get_support_inst()
 
 	def _interfaces_added(self, path, interfaces):
 		properties = interfaces["org.bluez.Device1"]
@@ -41,48 +34,34 @@ class BPB:
 			return
 
 		if path in self.devices:
-			dev = self.devices[path]
-
-			# if compact and _skip_dev(dev, properties):
-			# 	return
-			self.devices[path] = dict(self.devices[path].items() + properties.items())
+			self.devices[path] = dict(self.devices[path].items()
+				+ properties.items())
 		else:
 			self.devices[path] = properties
 
-		if "Address" in self.devices[path]:
-			address = properties["Address"]
-		else:
-			address = "<unknown>"
-
-		data = {
-			'address': address,
-			'devices': self.devices[path]
+		event = {
+			'id': 'device',
+			'data': self.devices[path],
+			'instance': self
 		}
-		self.callback('SCAN', data)
+		self.callback(event)
 
 	def _properties_changed(self, interface, changed, invalidated, path):
 		if interface != "org.bluez.Device1":
 			return
 
 		if path in self.devices:
-			dev = self.devices[path]
-
-			# if compact and _skip_dev(dev, changed):
-			# 	return
-			self.devices[path] = dict(self.devices[path].items() + changed.items())
+			self.devices[path] = dict(self.devices[path].items()
+				+ changed.items())
 		else:
 			self.devices[path] = changed
 
-		if "Address" in self.devices[path]:
-			address = self.devices[path]["Address"]
-		else:
-			address = "<unknown>"
-
-		data = {
-			'address': address,
-			'devices': self.devices[path]
+		event = {
+			'id': 'device',
+			'data': self.devices[path],
+			'instance': self
 		}
-		self.callback('PROPERTY', data)
+		self.callback(event)
 
 	def start_scan(self):
 		proxy = self.bus.get_object("org.bluez", "/")
@@ -96,20 +75,60 @@ class BPB:
 		self.adapter.StartDiscovery()
 
 	def _register_ad_cb(self):
-		data = {
+		event = {
+			'id': 'start_adv',
 			'message': 'Advertisement registered',
+			'error': None,
+			'instance': self
 		}
-		self.callback('ADVERTISEMENT', data)
-
+		self.callback(event)
 
 	def _register_ad_error_cb(self, error):
-		data = {
-			'message': 'Failed to register advertisement: ' + str(error), 
+		event = {
+			'id': 'start_adv',
+			'message': 'Failed to register advertisement',
+			'error': str(error),
+			'instance': self
 		}
-		self.callback('ADVERTISEMENT', data)
+		self.callback(event)
+
+	def _unregister_ad_cb(self):
+		event = {
+			'id': 'stop_adv',
+			'message': 'Advertisement unregistered',
+			'error': None,
+			'instance': self
+		}
+		self.callback(event)
+
+
+	def _unregister_ad_error_cb(self, error):
+		event = {
+			'id': 'stop_adv',
+			'message': 'Failed to unregister advertisement',
+			'error': str(error),
+			'instance': self
+		}
+		self.callback(event)
+
+	def _get_active_adv(self):
+		proxy = self.bus.get_object('org.bluez', '/org/bluez/hci0')
+		interface = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
+		a = interface.Get('org.bluez.LEAdvertisingManager1', 'ActiveInstances')
+		if (a):
+			return a
+		else:
+			return 0
+
+	def _get_support_inst(self):
+		proxy = self.bus.get_object('org.bluez', '/org/bluez/hci0')
+		interface = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
+		return interface.Get('org.bluez.LEAdvertisingManager1', 'SupportedInstances')
 
 	def start_adv(self, adv):
-		advertisement = Advertisement(self.bus, 0, adv['type'])
+		index = self._get_active_adv()
+
+		advertisement = Advertisement(self.bus, index, adv['type'])
 		for uuid in adv['service_uuid']:
 			advertisement.add_service_uuid(uuid)
 		advertisement.add_manufacturer_data(
@@ -119,6 +138,8 @@ class BPB:
 			adv['service_data']['uuid'],
 			adv['service_data']['data'])
 		advertisement.include_tx_power = adv['tx_power']
+
+		self.advertisements[index] = advertisement
 
 		proxy = self.bus.get_object('org.bluez', '/')
 		om_interface = dbus.Interface(proxy, 'org.freedesktop.DBus.ObjectManager')
@@ -134,3 +155,22 @@ class BPB:
 		ad_interface.RegisterAdvertisement(advertisement.get_path(), {},
 			reply_handler=self._register_ad_cb,
 			error_handler=self._register_ad_error_cb)
+
+		return index
+
+	def stop_adv(self, index):
+		proxy = self.bus.get_object('org.bluez', '/')
+		om_interface = dbus.Interface(proxy, 'org.freedesktop.DBus.ObjectManager')
+		objects = om_interface.GetManagedObjects()
+
+		for path, interfaces in objects.iteritems():
+			if 'org.bluez.LEAdvertisingManager1' in interfaces:
+				hcix = path # /org/bluez/hci0
+
+		hci_proxy = self.bus.get_object('org.bluez', hcix)
+		ad_interface = dbus.Interface(hci_proxy, 'org.bluez.LEAdvertisingManager1')
+
+		# print(self.advertisements[index].get_path())
+		ad_interface.UnregisterAdvertisement(self.advertisements[index].get_path(),
+			reply_handler=self._unregister_ad_cb,
+			error_handler=self._unregister_ad_error_cb)

@@ -39,43 +39,55 @@
 [METHOD]   org.bluez.LEAdvertisingManager1.RegisterAdvertisement(o:advertisement, a{sv}:options) -> ()
 [METHOD]   org.bluez.LEAdvertisingManager1.UnregisterAdvertisement(o:service) -> ()
 
-[root@artik bluez-python-api]# dbus-run-session mdbus2 -s 
+[root@artik ~]# dbus-run-session mdbus2 -s
 org.bluez / org.freedesktop.DBus.ObjectManager.GetManagedObjects
 ({
 	'/org/bluez': {
-		'org.freedesktop.DBus.Introspectable': {}, 
+		'org.freedesktop.DBus.Introspectable': {},
 		'org.bluez.AgentManager1': {}, 
 		'org.bluez.ProfileManager1': {}
-	}, 
+	},
 	'/org/bluez/hci0': {
-		'org.freedesktop.DBus.Introspectable': {}, 
+		'org.freedesktop.DBus.Introspectable': {},
 		'org.bluez.Adapter1': {
-			'Address': <'70:2C:1F:37:7C:B8'>, 
-			'Name': <'artik'>, 
-			'Alias': <'artik'>, 
-			'Class': <uint32 786432>, 
-			'Powered': <true>, 
-			'Discoverable': <false>, 
-			'DiscoverableTimeout': <uint32 180>, 
-			'Pairable': <true>, 
-			'PairableTimeout': <uint32 0>, 
-			'Discovering': <false>, 
+			'Address': <'70:2C:1F:37:7C:B8'>,
+			'AddressType': <'public'>,
+			'Name': <'artik'>,
+			'Alias': <'artik'>,
+			'Class': <uint32 786432>,
+			'Powered': <true>,
+			'Discoverable': <false>,
+			'DiscoverableTimeout': <uint32 180>,
+			'Pairable': <true>,
+			'PairableTimeout': <uint32 0>,
+			'Discovering': <false>,
 			'UUIDs': <[
-				'00001112-0000-1000-8000-00805f9b34fb', 
-				'00001801-0000-1000-8000-00805f9b34fb', 
-				'0000110e-0000-1000-8000-00805f9b34fb', 
-				'00001800-0000-1000-8000-00805f9b34fb', 
-				'00001200-0000-1000-8000-00805f9b34fb', 
-				'0000110c-0000-1000-8000-00805f9b34fb', 
-				'0000110b-0000-1000-8000-00805f9b34fb', 
-				'0000110a-0000-1000-8000-00805f9b34fb'
+				'00001112-0000-1000-8000-00805f9b34fb',
+				'00001801-0000-1000-8000-00805f9b34fb',
+				'0000110e-0000-1000-8000-00805f9b34fb',
+				'00001800-0000-1000-8000-00805f9b34fb',
+				'00001200-0000-1000-8000-00805f9b34fb',
+				'0000110c-0000-1000-8000-00805f9b34fb',
+				'0000110a-0000-1000-8000-00805f9b34fb',
+				'0000110b-0000-1000-8000-00805f9b34fb'
 			]>, 
-			'Modalias': <'usb:v1D6Bp0246d052A'>
+			'Modalias': <'usb:v1D6Bp0246d0532'>
 		}, 
-		'org.freedesktop.DBus.Properties': {}, 
-		'org.bluez.GattManager1': {}, 
-		'org.bluez.Media1': {}, 
-		'org.bluez.NetworkServer1': {}, 
-		'org.bluez.LEAdvertisingManager1': {}
+		'org.freedesktop.DBus.Properties': {},
+		'org.bluez.GattManager1': {},
+		'org.bluez.LEAdvertisingManager1': {
+			'ActiveInstances': <byte 0x01>,
+			'SupportedInstances': <byte 0x04>,
+			'SupportedIncludes': <['tx-power', 'local-name']>
+		},
+		'org.bluez.Media1': {},
+		'org.bluez.NetworkServer1': {}
 	}
 },)
+
+[root@artik ~]# dbus-run-session mdbus2 -s
+org.bluez
+/org/bluez/hci0
+org.freedesktop.DBus.Properties.Get
+org.bluez.LEAdvertisingManager1 ActiveInstances
+(<byte 0x01>,)

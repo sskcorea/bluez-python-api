@@ -6,7 +6,9 @@ import argparse
 from gi.repository import GObject
 from bpb import BPB
 
-def print_compact(address, properties):
+adv_id = 0
+
+def print_compact(properties):
 	name = ""
 	address = "<unknown>"
 
@@ -27,9 +29,7 @@ def print_compact(address, properties):
 
 	properties["Logged"] = True
 
-def print_normal(address, properties):
-	print("[ " + address + " ]")
-
+def print_normal(properties):
 	for key in properties.keys():
 		value = properties[key]
 		if type(value) is dbus.String:
@@ -41,13 +41,21 @@ def print_normal(address, properties):
 
 	print()
 
-	properties["Logged"] = True
-
-def cb(key, value):
-	if (key == 'PROPERTY' or key == 'SCAN'):
-		print_compact(value['address'], value['devices'])
-	elif (key == 'ADVERTISEMENT'):
-		print(value['message'])
+def cb(evt):
+	if (evt['id'] == 'device'):
+		# print_compact(evt['data'])
+		print_normal(evt['data'])
+	elif (evt['id'] == 'start_adv'):
+		if (evt['error'] is not None):
+			print(evt['error'])
+		else:
+			print(evt['message'])
+			evt['instance'].stop_adv(adv_id)
+	elif (evt['id'] == 'stop_adv'):
+		if (evt['error'] is not None):
+			print(evt['error'])
+		else:
+			print(evt['message'])
 
 def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -55,8 +63,10 @@ def main():
 	bpb = BPB(cb)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-s', '--scan', help='start discovery', action='store_true')
-	parser.add_argument('-a', '--advertise', help='start advertising', action='store_true')
+	parser.add_argument('-s', '--scan', help='start discovery',
+		action='store_true')
+	parser.add_argument('-a', '--advertise', help='start advertising',
+		action='store_true')
 	args = parser.parse_args()
 	if (args.scan):
 		bpb.start_scan()
@@ -76,10 +86,13 @@ def main():
 			'tx_power': True,
 			'data': [0x26, [0x01, 0x01, 0x00]],
 		}
-		bpb.start_adv(adv)
+		adv_id = bpb.start_adv(adv)
 
 	mainloop = GObject.MainLoop()
 	mainloop.run()
 
 if __name__ == "__main__":
-	main()
+	try:
+		main()
+	except KeyboardInterrupt:
+		pass
