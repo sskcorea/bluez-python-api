@@ -1,0 +1,39 @@
+* callback function signature:
+	def cb(evt):
+	
+* callback function argument:
+	evt = {
+		'id': 'device', 'advertisement'  
+		'data': callback event data
+		'instance: bpb instance
+	}
+
+* event description:
+	{
+		'id': 'device',
+		'data' = {
+			AddressType = random
+			Alias = 66-A0-3D-A2-85-A9
+			ServicesResolved = 0
+			Adapter = /org/bluez/hci0
+			LegacyPairing = 0
+			Paired = 0
+			ManufacturerData = dbus.Dictionary({dbus.UInt16(76): dbus.Array([dbus.Byte(16), dbus.Byte(5), dbus.Byte(11), dbus.Byte(28), dbus.Byte(192), dbus.Byte(243), dbus.Byte(209)], signature=dbus.Signature('y'), variant_level=1)}, signature=dbus.Signature('qv'), variant_level=1)
+			Connected = 0
+			UUIDs = dbus.Array([], signature=dbus.Signature('s'), variant_level=1)
+			Address = 66:A0:3D:A2:85:A9
+			RSSI = -84
+			Trusted = 0
+			Blocked = 0
+		},
+		'instance': bpb instance
+	}
+
+	{
+		'id': 'start_adv', 'stop_adv',
+		'data' = {
+			'message': string
+			'error': string
+		},
+		'instance': bpb instance
+	}
