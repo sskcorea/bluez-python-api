@@ -39,18 +39,18 @@ def print_normal(properties):
 		else:
 			print("    %s = %s" % (key, value))
 
-	print()
-
 def cb(evt):
+	print(evt['id'])
 	if (evt['id'] == 'device'):
 		# print_compact(evt['data'])
 		print_normal(evt['data'])
 	elif (evt['id'] == 'start_adv'):
 		if (evt['error'] is not None):
 			print(evt['error'])
+			sys.exit()
 		else:
 			print(evt['message'])
-			evt['instance'].stop_adv(adv_id)
+			# evt['instance'].stop_adv(adv_id)
 	elif (evt['id'] == 'stop_adv'):
 		if (evt['error'] is not None):
 			print(evt['error'])
@@ -66,6 +66,8 @@ def main():
 	parser.add_argument('-s', '--scan', help='start discovery',
 		action='store_true')
 	parser.add_argument('-a', '--advertise', help='start advertising',
+		action='store_true')
+	parser.add_argument('-r', '--agent', help='register agent',
 		action='store_true')
 	args = parser.parse_args()
 	if (args.scan):
@@ -87,6 +89,10 @@ def main():
 			'data': [0x26, [0x01, 0x01, 0x00]],
 		}
 		adv_id = bpb.start_adv(adv)
+	elif (args.agent):
+		bpb.register_agent("KeyboardDisplay")
+	else:
+		sys.exit()
 
 	mainloop = GObject.MainLoop()
 	mainloop.run()

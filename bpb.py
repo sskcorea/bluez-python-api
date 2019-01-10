@@ -3,16 +3,16 @@ from __future__ import absolute_import, print_function, unicode_literals
 import dbus
 import bluezutils
 from Advertisement import Advertisement
+from Agent import Agent
 
 # Bluez Python Bindings
 class BPB:
-	# Class variables
 	devices = {}
 	data = {}
 	advertisements = []
+	agent = None
 
 	def __init__(self, callback):
-		# Instance variables
 		self.bus = dbus.SystemBus()
 		self.adapter = bluezutils.find_adapter(0)
 		self.callback = callback
@@ -28,7 +28,8 @@ class BPB:
 			path_keyword = "path")
 		self.advertisements = [None] * self._get_support_inst()
 
-	def _interfaces_added(self, path, interfaces):
+	def _interfaces_added_device1(self, path, interfaces):
+		print("_interfaces_added_device1")
 		properties = interfaces["org.bluez.Device1"]
 		if not properties:
 			return
@@ -46,6 +47,33 @@ class BPB:
 		}
 		self.callback(event)
 
+	def _interfaces_added_gatt_server1(self, path, interfaces):
+		print('_interfaces_added_gatt_server1')
+		properties = interfaces["org.bluez.GattService1"]
+		if not properties:
+			return
+
+		event = {
+			'id': 'device',
+			'data': properties,
+			'instance': self
+		}
+		self.callback(event)
+
+	def _interfaces_added(self, path, interfaces):
+		print('_interfaces_added')
+		for interface in interfaces.items():
+			for obj in interface:
+				if type(obj) != str:
+					pass
+
+				if (obj == 'org.bluez.Device1'):
+					self._interfaces_added_device1(path, interfaces)
+				elif (obj == "org.bluez.GattService1"):
+					self._interfaces_added_gatt_server1(path, interfaces)
+				else:
+					pass
+
 	def _properties_changed(self, interface, changed, invalidated, path):
 		if interface != "org.bluez.Device1":
 			return
@@ -61,7 +89,7 @@ class BPB:
 			'data': self.devices[path],
 			'instance': self
 		}
-		self.callback(event)
+		# self.callback(event)
 
 	def start_scan(self):
 		proxy = self.bus.get_object("org.bluez", "/")
@@ -170,7 +198,13 @@ class BPB:
 		hci_proxy = self.bus.get_object('org.bluez', hcix)
 		ad_interface = dbus.Interface(hci_proxy, 'org.bluez.LEAdvertisingManager1')
 
-		# print(self.advertisements[index].get_path())
 		ad_interface.UnregisterAdvertisement(self.advertisements[index].get_path(),
 			reply_handler=self._unregister_ad_cb,
 			error_handler=self._unregister_ad_error_cb)
+
+	def register_agent(self, capability):
+		self.agent = Agent(self.bus, '/bpb/agent')
+
+		proxy = self.bus.get_object('org.bluez', "/org/bluez")
+		am_interface = dbus.Interface(proxy, "org.bluez.AgentManager1")
+		am_interface.RegisterAgent('/bpb/agent', capability)

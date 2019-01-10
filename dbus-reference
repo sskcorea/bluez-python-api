@@ -91,3 +91,100 @@ org.bluez
 org.freedesktop.DBus.Properties.Get
 org.bluez.LEAdvertisingManager1 ActiveInstances
 (<byte 0x01>,)
+
+<-- LE Connection Request
+[SIGNAL] org.freedesktop.DBus.ObjectManager.InterfacesAdded  /  :1.179
+(
+	'/org/bluez/hci0/dev_76_1A_9C_C2_E8_1D',
+	{
+		'org.freedesktop.DBus.Introspectable': {},
+		'org.bluez.Device1': {
+			'Address': <'76:1A:9C:C2:E8:1D'>,
+			'AddressType': <'random'>,
+			'Alias': <'76-1A-9C-C2-E8-1D'>,
+			'Paired': <false>,
+			'Trusted': <false>,
+			'Blocked': <false>,
+			'LegacyPairing': <false>,
+			'Connected': <true>,
+			'UUIDs': <@as []>,
+			'Adapter': <objectpath '/org/bluez/hci0'>,
+			'ServicesResolved': <false>
+		},
+		'org.freedesktop.DBus.Properties': {}
+	}
+)
+[SIGNAL] org.freedesktop.DBus.ObjectManager.InterfacesAdded  /  :1.179
+(
+	'/org/bluez/hci0/dev_76_1A_9C_C2_E8_1D/service0001',
+	{
+		'org.freedesktop.DBus.Introspectable': {},
+		'org.bluez.GattService1': {
+			'UUID': <'00001801-0000-1000-8000-00805f9b34fb'>,
+			'Device': <objectpath '/org/bluez/hci0/dev_76_1A_9C_C2_E8_1D'>,
+			'Primary': <true>, 'Includes': <@ao []>
+		},
+		'org.freedesktop.DBus.Properties': {}
+	}
+)
+[SIGNAL] org.freedesktop.DBus.ObjectManager.InterfacesAdded  /  :1.179
+(
+	'/org/bluez/hci0/dev_76_1A_9C_C2_E8_1D/service0001/char0002',
+	{
+		'org.freedesktop.DBus.Introspectable': {},
+		'org.bluez.GattCharacteristic1': {
+			'UUID': <'00002a05-0000-1000-8000-00805f9b34fb'>,
+			'Service': <objectpath '/org/bluez/hci0/dev_76_1A_9C_C2_E8_1D/service0001'>,
+			'Value': <@ay []>,
+			'Notifying': <false>,
+			'Flags': <['indicate']>
+		},
+		'org.freedesktop.DBus.Properties': {}
+	}
+)
+[SIGNAL] org.freedesktop.DBus.Properties.PropertiesChanged  /org/bluez/hci0/dev_76_1A_9C_C2_E8_1D  :1.179
+(
+	'org.bluez.Device1', {
+		'UUIDs': <['00001800-0000-1000-8000-00805f9b34fb',
+		'00001801-0000-1000-8000-00805f9b34fb']>,
+		'ServicesResolved': <true>},
+	[]
+)
+[SIGNAL] org.freedesktop.DBus.Properties.PropertiesChanged  /org/bluez/hci0/dev_76_1A_9C_C2_E8_1D  :1.179
+(
+	'org.bluez.Device1', {
+		'Name': <'Samsung Galaxy S7 edge'>,
+		'Alias': <'Samsung Galaxy S7 edge'>
+	},
+	[]
+)
+
+* python dbus dict
+dbus.Dictionary({
+	dbus.String(u'org.freedesktop.DBus.Introspectable'): dbus.Dictionary(
+		{}, signature=dbus.Signature('sv')
+	),
+	dbus.String(u'org.freedesktop.DBus.Properties'): dbus.Dictionary(
+		{}, signature=dbus.Signature('sv')
+	),
+	dbus.String(u'org.bluez.Device1'): dbus.Dictionary(
+		{
+			dbus.String(u'AddressType'): dbus.String(u'random', variant_level=1),
+			dbus.String(u'Paired'): dbus.Boolean(False, variant_level=1),
+			dbus.String(u'ServicesResolved'): dbus.Boolean(False, variant_level=1),
+			dbus.String(u'Adapter'): dbus.ObjectPath('/org/bluez/hci0', variant_level=1),
+			dbus.String(u'LegacyPairing'): dbus.Boolean(False, variant_level=1),
+			dbus.String(u'Alias'): dbus.String(u'76-30-E5-47-F7-F4', variant_level=1),
+			dbus.String(u'Connected'): dbus.Boolean(True, variant_level=1),
+			dbus.String(u'UUIDs'): dbus.Array(
+				[], signature=dbus.Signature('s'), variant_level=1
+			),
+			dbus.String(u'Address'): dbus.String(u'76:30:E5:47:F7:F4', variant_level=1),
+			dbus.String(u'Trusted'): dbus.Boolean(False, variant_level=1),
+			dbus.String(u'Blocked'): dbus.Boolean(False, variant_level=1)
+		}, signature=dbus.Signature('sv')
+		)
+	}, signature=dbus.Signature('sa{sv}')
+)
+dbus.Dictionary({dbus.String(u'org.freedesktop.DBus.Properties'): dbus.Dictionary({}, signature=dbus.Signature('sv')), dbus.String(u'org.freedesktop.DBus.Introspectable'): dbus.Dictionary({}, signature=dbus.Signature('sv')), dbus.String(u'org.bluez.GattService1'): dbus.Dictionary({dbus.String(u'Device'): dbus.ObjectPath('/org/bluez/hci0/dev_76_30_E5_47_F7_F4', variant_level=1), dbus.String(u'Includes'): dbus.Array([], signature=dbus.Signature('o'), variant_level=1), dbus.String(u'UUID'): dbus.String(u'00001801-0000-1000-8000-00805f9b34fb', variant_level=1), dbus.String(u'Primary'): dbus.Boolean(True, variant_level=1)}, signature=dbus.Signature('sv'))}, signature=dbus.Signature('sa{sv}'))
+dbus.Dictionary({dbus.String(u'org.bluez.GattCharacteristic1'): dbus.Dictionary({dbus.String(u'Flags'): dbus.Array([dbus.String(u'indicate')], signature=dbus.Signature('s'), variant_level=1), dbus.String(u'Notifying'): dbus.Boolean(False, variant_level=1), dbus.String(u'Value'): dbus.Array([], signature=dbus.Signature('y'), variant_level=1), dbus.String(u'UUID'): dbus.String(u'00002a05-0000-1000-8000-00805f9b34fb', variant_level=1), dbus.String(u'Service'): dbus.ObjectPath('/org/bluez/hci0/dev_76_30_E5_47_F7_F4/service0001', variant_level=1)}, signature=dbus.Signature('sv')), dbus.String(u'org.freedesktop.DBus.Introspectable'): dbus.Dictionary({}, signature=dbus.Signature('sv')), dbus.String(u'org.freedesktop.DBus.Properties'): dbus.Dictionary({}, signature=dbus.Signature('sv'))}, signature=dbus.Signature('sa{sv}'))
