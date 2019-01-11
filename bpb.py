@@ -208,3 +208,4 @@ class BPB:
 		proxy = self.bus.get_object('org.bluez', "/org/bluez")
 		am_interface = dbus.Interface(proxy, "org.bluez.AgentManager1")
 		am_interface.RegisterAgent('/bpb/agent', capability)
+		am_interface.RequestDefaultAgent('/bpb/agent')

@@ -6,31 +6,36 @@ def ask(prompt):
 	except:
 		return input(prompt)
 
-def set_trusted(path):
-	props = dbus.Interface(bus.get_object("org.bluez", path),
-					"org.freedesktop.DBus.Properties")
-	props.Set("org.bluez.Device1", "Trusted", True)
-
-def dev_connect(path):
-	dev = dbus.Interface(bus.get_object("org.bluez", path),
-							"org.bluez.Device1")
-	dev.Connect()
-
 class Rejected(dbus.DBusException):
 	_dbus_error_name = "org.bluez.Error.Rejected"
 
 class Agent(dbus.service.Object):
-	exit_on_release = True
+	# exit_on_release = True
+	bus = None
 
-	def set_exit_on_release(self, exit_on_release):
-		self.exit_on_release = exit_on_release
+	def _set_trusted(self, path):
+		props = dbus.Interface(self.bus.get_object("org.bluez", path),
+						"org.freedesktop.DBus.Properties")
+		props.Set("org.bluez.Device1", "Trusted", True)
+
+	def _dev_connect(self, path):
+		dev = dbus.Interface(self.bus.get_object("org.bluez", path),
+								"org.bluez.Device1")
+		dev.Connect()
+
+	def __init__(self, bus, path):
+		self.bus = bus
+		dbus.service.Object.__init__(self, bus, path)
+
+	# def set_exit_on_release(self, exit_on_release):
+	# 	self.exit_on_release = exit_on_release
 
 	@dbus.service.method('org.bluez.Agent1',
 					in_signature="", out_signature="")
 	def Release(self):
 		print("Release")
-		if self.exit_on_release:
-			mainloop.quit()
+		# if self.exit_on_release:
+		# 	mainloop.quit()
 
 	@dbus.service.method('org.bluez.Agent1',
 					in_signature="os", out_signature="")
@@ -45,14 +50,14 @@ class Agent(dbus.service.Object):
 					in_signature="o", out_signature="s")
 	def RequestPinCode(self, device):
 		print("RequestPinCode (%s)" % (device))
-		set_trusted(device)
+		self._set_trusted(device)
 		return ask("Enter PIN Code: ")
 
 	@dbus.service.method('org.bluez.Agent1',
 					in_signature="o", out_signature="u")
 	def RequestPasskey(self, device):
 		print("RequestPasskey (%s)" % (device))
-		set_trusted(device)
+		self._set_trusted(device)
 		passkey = ask("Enter passkey: ")
 		return dbus.UInt32(passkey)
 
@@ -73,7 +78,7 @@ class Agent(dbus.service.Object):
 		print("RequestConfirmation (%s, %06d)" % (device, passkey))
 		confirm = ask("Confirm passkey (yes/no): ")
 		if (confirm == "yes"):
-			set_trusted(device)
+			self._set_trusted(device)
 			return
 		raise Rejected("Passkey doesn't match")
 
