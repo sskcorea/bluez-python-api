@@ -24,7 +24,6 @@ class BPB:
 		self.bus.add_signal_receiver(self._properties_changed,
 			dbus_interface = "org.freedesktop.DBus.Properties",
 			signal_name = "PropertiesChanged",
-			arg0 = "org.bluez.Device1",
 			path_keyword = "path")
 		self.advertisements = [None] * self._get_support_inst()
 
@@ -75,21 +74,45 @@ class BPB:
 					pass
 
 	def _properties_changed(self, interface, changed, invalidated, path):
-		if interface != "org.bluez.Device1":
+		print('_properties_changed')
+		print(interface)
+
+		event = None
+
+		if (interface == 'org.bluez.Device1'):
+			if path in self.devices:
+				self.devices[path] = dict(self.devices[path].items()
+					+ changed.items())
+			else:
+				self.devices[path] = changed
+
+			event = {
+				'id': 'device',
+				'data': self.devices[path],
+				'instance': self
+			}
+		elif (interface == 'org.bluez.MediaControl1'):
+			event = {
+				'id': 'mediacontrol',
+				'data': changed,
+				'instance': self
+			}
+		elif (interface == 'org.bluez.MediaPlayer1'):
+			event = {
+				'id': 'mediaplayer',
+				'data': changed,
+				'instance': self
+			}
+		elif (interface == 'org.bluez.MediaItem1'):
+			event = {
+				'id': 'mediaitem',
+				'data': changed,
+				'instance': self
+			}
+		else:
 			return
 
-		if path in self.devices:
-			self.devices[path] = dict(self.devices[path].items()
-				+ changed.items())
-		else:
-			self.devices[path] = changed
-
-		event = {
-			'id': 'device',
-			'data': self.devices[path],
-			'instance': self
-		}
-		# self.callback(event)
+		self.callback(event)
 
 	def start_scan(self):
 		proxy = self.bus.get_object("org.bluez", "/")

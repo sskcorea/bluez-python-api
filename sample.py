@@ -56,6 +56,9 @@ def cb(evt):
 			print(evt['error'])
 		else:
 			print(evt['message'])
+	elif (evt['id'] == 'mediacontrol' or evt['id'] == 'mediaplayer' or
+		evt['id'] == 'mediaitem'):
+		print(evt['data'])
 
 def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
