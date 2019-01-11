@@ -60,6 +60,7 @@ def cb(evt):
 def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
+	capability = 'KeyboardDisplay'
 	bpb = BPB(cb)
 
 	parser = argparse.ArgumentParser()
@@ -69,6 +70,9 @@ def main():
 		action='store_true')
 	parser.add_argument('-r', '--agent', help='register agent',
 		action='store_true')
+	parser.add_argument("-c", "--capability", action="store",
+		help="set capability", choices=['KeyboardDisplay', 'DisplayOnly',
+		'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
 	args = parser.parse_args()
 	if (args.scan):
 		bpb.start_scan()
@@ -90,7 +94,9 @@ def main():
 		}
 		adv_id = bpb.start_adv(adv)
 	elif (args.agent):
-		bpb.register_agent("KeyboardDisplay")
+		if args.capability:
+			capability  = args.capability
+		bpb.register_agent(capability)
 	else:
 		sys.exit()
 
