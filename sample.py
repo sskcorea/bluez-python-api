@@ -6,6 +6,8 @@ import argparse
 from gi.repository import GObject
 from bpb import BPB
 
+bpb = None
+
 capability = 'KeyboardDisplay'
 
 adv_id = 0
@@ -61,25 +63,54 @@ def main():
 	bpb = BPB(cb)
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-s', '--scan', help='start discovery',
+	group = parser.add_mutually_exclusive_group()
+	group.add_argument('-addr', help='get address', action='store_true')
+	group.add_argument('-name', help='get name', action='store_true')
+	group.add_argument('-alias', help='get alias', action='store_true')
+	group.add_argument('-info', help='get adapter info', action='store_true')
+	group.add_argument('-discoverable', help='get discoverable',
 		action='store_true')
-	parser.add_argument('-a', '--advertise', help='start advertising',
-		action='store_true')
-	parser.add_argument('-r', '--agent', help='register agent',
-		action='store_true')
-	parser.add_argument("-c", "--capability", action="store",
-		help="set capability", choices=['KeyboardDisplay', 'DisplayOnly',
+	group.add_argument('-set', help='set alias, discoverable',
+		action='store', nargs=2, metavar=('key', 'value'))
+	parser.add_argument('-scan', help='start discovery', action='store_true')
+	parser.add_argument('-adv', help='start advertising', action='store_true')
+	parser.add_argument('-agent', help='register agent', action='store_true')
+	parser.add_argument('-capa', help='set capability',
+		action='store', choices=['KeyboardDisplay', 'DisplayOnly',
 		'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
 	args = parser.parse_args()
 
 	if (args.scan):
 		bpb.start_scan()
-	elif (args.advertise):
+	elif (args.adv):
 		adv_id = bpb.start_adv(adv)
 	elif (args.agent):
-		if args.capability:
-			capability = args.capability
+		if args.capa:
+			capability = args.capa
 		bpb.register_agent(capability)
+	elif (args.addr):
+		print(bpb.get_addr())
+		sys.exit()
+	elif (args.name):
+		print(bpb.get_name())
+		sys.exit()
+	elif (args.alias):
+		print(bpb.get_alias())
+		sys.exit()
+	elif (args.info):
+		print_device(bpb.get_info())
+		sys.exit()
+	elif (args.discoverable):
+		print(bpb.get_discoverable())
+		sys.exit()
+	elif (args.set):
+		if (args.set[0] == 'alias'):
+			bpb.set_alias(args.set[1])
+		elif (args.set[0] == 'discoverable'):
+			bpb.set_discoverable(args.set[1])
+		else:
+			pass
+		sys.exit()
 	else:
 		sys.exit()
 

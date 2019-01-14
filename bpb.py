@@ -10,11 +10,9 @@ class BPB:
 	devices = {}
 	data = {}
 	advertisements = []
-	agent = None
 
 	def __init__(self, callback):
 		self.bus = dbus.SystemBus()
-		self.adapter = bluezutils.find_adapter(0)
 		self.callback = callback
 
 		self.bus.add_signal_receiver(self._interfaces_added,
@@ -26,6 +24,23 @@ class BPB:
 			signal_name = "PropertiesChanged",
 			path_keyword = "path")
 		self.advertisements = [None] * self._get_support_inst()
+
+		p1 = self.bus.get_object('org.bluez', '/')
+		self.if_obj_mgr = dbus.Interface(p1, 'org.freedesktop.DBus.ObjectManager')
+
+		o = self.if_obj_mgr.GetManagedObjects()
+		for path, interfaces in o.iteritems():
+			if ('org.bluez.Adapter1' in interfaces
+				and 'org.bluez.LEAdvertisingManager1' in interfaces):
+				hcix = path # ex, /org/bluez/hci0
+
+		p2 = self.bus.get_object('org.bluez', '/org/bluez')
+		self.if_agent_mgr = dbus.Interface(p2, 'org.bluez.AgentManager1')
+
+		p3 = self.bus.get_object('org.bluez', hcix)
+		self.if_prop = dbus.Interface(p3, 'org.freedesktop.DBus.Properties')
+		self.if_adapter = dbus.Interface(p3, 'org.bluez.Adapter1')
+		self.if_le_mgr = dbus.Interface(p3, 'org.bluez.LEAdvertisingManager1')
 
 	def _interfaces_added_device1(self, path, interfaces):
 		print("_interfaces_added_device1")
@@ -114,17 +129,6 @@ class BPB:
 
 		self.callback(event)
 
-	def start_scan(self):
-		proxy = self.bus.get_object("org.bluez", "/")
-		om_interface = dbus.Interface(proxy, "org.freedesktop.DBus.ObjectManager")
-		objects = om_interface.GetManagedObjects()
-
-		for path, interfaces in objects.iteritems():
-			if "org.bluez.Device1" in interfaces:
-				self.devices[path] = interfaces["org.bluez.Device1"]
-
-		self.adapter.StartDiscovery()
-
 	def _register_ad_cb(self):
 		event = {
 			'id': 'start_adv',
@@ -176,6 +180,49 @@ class BPB:
 		interface = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
 		return interface.Get('org.bluez.LEAdvertisingManager1', 'SupportedInstances')
 
+	def start_scan(self):
+		o = self.if_obj_mgr.GetManagedObjects()
+
+		for path, interfaces in o.iteritems():
+			if "org.bluez.Device1" in interfaces:
+				self.devices[path] = interfaces["org.bluez.Device1"]
+
+		self.if_adapter.StartDiscovery()
+
+	def get_addr(self):
+		return self.if_prop.Get('org.bluez.Adapter1', 'Address')
+
+	def get_name(self):
+		return self.if_prop.Get('org.bluez.Adapter1', 'Name')
+
+	def get_alias(self):
+		return self.if_prop.Get('org.bluez.Adapter1', 'Alias')
+
+	def set_alias(self, alias):
+		return self.if_prop.Set('org.bluez.Adapter1', 'Alias', alias)
+
+	def get_info(self):
+		o = self.if_obj_mgr.GetManagedObjects()
+		for _, interfaces in o.iteritems():
+			if "org.bluez.Adapter1" not in interfaces:
+				continue
+
+			return interfaces["org.bluez.Adapter1"]
+
+	def get_discoverable(self):
+		return 'true' if self.if_prop.Get('org.bluez.Adapter1', 'Discoverable') \
+			else 'false'
+
+	def set_discoverable(self, onoff):
+		if (onoff == "on"):
+			value = dbus.Boolean(1)
+		elif (onoff == "off"):
+			value = dbus.Boolean(0)
+		else:
+			value = dbus.Boolean(onoff)
+
+		self.if_prop.Set('org.bluez.Adapter1', 'Discoverable', value)
+
 	def start_adv(self, adv):
 		index = self._get_active_adv()
 
@@ -192,43 +239,20 @@ class BPB:
 
 		self.advertisements[index] = advertisement
 
-		proxy = self.bus.get_object('org.bluez', '/')
-		om_interface = dbus.Interface(proxy, 'org.freedesktop.DBus.ObjectManager')
-		objects = om_interface.GetManagedObjects()
-
-		for path, interfaces in objects.iteritems():
-			if 'org.bluez.LEAdvertisingManager1' in interfaces:
-				hcix = path # /org/bluez/hci0
-
-		hci_proxy = self.bus.get_object('org.bluez', hcix)
-		ad_interface = dbus.Interface(hci_proxy, 'org.bluez.LEAdvertisingManager1')
-
-		ad_interface.RegisterAdvertisement(advertisement.get_path(), {},
+		self.if_le_mgr.RegisterAdvertisement(advertisement.get_path(), {},
 			reply_handler=self._register_ad_cb,
 			error_handler=self._register_ad_error_cb)
 
 		return index
 
 	def stop_adv(self, index):
-		proxy = self.bus.get_object('org.bluez', '/')
-		om_interface = dbus.Interface(proxy, 'org.freedesktop.DBus.ObjectManager')
-		objects = om_interface.GetManagedObjects()
-
-		for path, interfaces in objects.iteritems():
-			if 'org.bluez.LEAdvertisingManager1' in interfaces:
-				hcix = path # /org/bluez/hci0
-
-		hci_proxy = self.bus.get_object('org.bluez', hcix)
-		ad_interface = dbus.Interface(hci_proxy, 'org.bluez.LEAdvertisingManager1')
-
-		ad_interface.UnregisterAdvertisement(self.advertisements[index].get_path(),
+		self.if_le_mgr.UnregisterAdvertisement(
+			self.advertisements[index].get_path(),
 			reply_handler=self._unregister_ad_cb,
 			error_handler=self._unregister_ad_error_cb)
 
 	def register_agent(self, capability):
-		self.agent = Agent(self.bus, '/bpb/agent')
+		Agent(self.bus, '/bpb/agent')
 
-		proxy = self.bus.get_object('org.bluez', "/org/bluez")
-		am_interface = dbus.Interface(proxy, "org.bluez.AgentManager1")
-		am_interface.RegisterAgent('/bpb/agent', capability)
-		am_interface.RequestDefaultAgent('/bpb/agent')
+		self.if_agent_mgr.RegisterAgent('/bpb/agent', capability)
+		self.if_agent_mgr.RequestDefaultAgent('/bpb/agent')
