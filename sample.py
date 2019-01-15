@@ -44,7 +44,11 @@ group.add_argument('-alias', help='get alias', action='store_true')
 group.add_argument('-info', help='get adapter info', action='store_true')
 group.add_argument('-discoverable', help='get discoverable',
 	action='store_true')
-group.add_argument('-set', help='set alias, discoverable',
+group.add_argument('-timeout', help='get discoverable timeout',
+	action='store_true')
+group.add_argument('-discovering', help='get discovering',
+	action='store_true')
+group.add_argument('-set', help='set alias, discoverable, discoverable timeout',
 	action='store', nargs=2, metavar=('key', 'value'))
 parser.add_argument('-scan', help='start discovery', action='store_true')
 parser.add_argument('-adv', help='start advertising', action='store_true')
@@ -114,11 +118,19 @@ def main():
 	elif (args.discoverable):
 		print(bpb.get_discoverable())
 		sys.exit()
+	elif (args.timeout):
+		print(bpb.get_discoverable_timeout())
+		sys.exit()
+	elif (args.discovering):
+		print(bpb.get_discovering())
+		sys.exit()
 	elif (args.set):
 		if (args.set[0] == 'alias'):
 			bpb.set_alias(args.set[1])
 		elif (args.set[0] == 'discoverable'):
 			bpb.set_discoverable(args.set[1])
+		elif (args.set[0] == 'timeout'):
+			bpb.set_discoverable_timeout(args.set[1])
 		else:
 			pass
 		sys.exit()

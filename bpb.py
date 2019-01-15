@@ -209,6 +209,17 @@ class BPB:
 
 		self.if_prop.Set('org.bluez.Adapter1', 'Discoverable', value)
 
+	def get_discoverable_timeout(self):
+		return self.if_prop.Get('org.bluez.Adapter1', 'DiscoverableTimeout')
+
+	def set_discoverable_timeout(self, time):
+		self.if_prop.Set('org.bluez.Adapter1', 'DiscoverableTimeout', 
+			dbus.UInt32(time))
+
+	def get_discovering(self):
+		return 'true' if self.if_prop.Get('org.bluez.Adapter1', 'Discovering') \
+			else 'false'
+
 	def start_adv(self, adv):
 		index = self._get_active_adv()
 
