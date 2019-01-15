@@ -83,6 +83,7 @@ def main():
 	if (args.scan):
 		bpb.start_scan()
 	elif (args.adv):
+		bpb.set_discoverable('on')
 		adv_id = bpb.start_adv(adv)
 	elif (args.agent):
 		if args.capa:

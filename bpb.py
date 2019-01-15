@@ -23,7 +23,6 @@ class BPB:
 			dbus_interface = "org.freedesktop.DBus.Properties",
 			signal_name = "PropertiesChanged",
 			path_keyword = "path")
-		self.advertisements = [None] * self._get_support_inst()
 
 		p1 = self.bus.get_object('org.bluez', '/')
 		self.if_obj_mgr = dbus.Interface(p1, 'org.freedesktop.DBus.ObjectManager')
@@ -41,6 +40,8 @@ class BPB:
 		self.if_prop = dbus.Interface(p3, 'org.freedesktop.DBus.Properties')
 		self.if_adapter = dbus.Interface(p3, 'org.bluez.Adapter1')
 		self.if_le_mgr = dbus.Interface(p3, 'org.bluez.LEAdvertisingManager1')
+
+		self.advertisements = [None] * self._get_support_inst()
 
 	def _interfaces_added_device1(self, path, interfaces):
 		print("_interfaces_added_device1")
@@ -167,18 +168,13 @@ class BPB:
 		self.callback(event)
 
 	def _get_active_adv(self):
-		proxy = self.bus.get_object('org.bluez', '/org/bluez/hci0')
-		interface = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
-		a = interface.Get('org.bluez.LEAdvertisingManager1', 'ActiveInstances')
-		if (a):
-			return a
-		else:
-			return 0
+		ai = self.if_prop.Get('org.bluez.LEAdvertisingManager1',
+			'ActiveInstances')
+		return ai if ai else 0
 
 	def _get_support_inst(self):
-		proxy = self.bus.get_object('org.bluez', '/org/bluez/hci0')
-		interface = dbus.Interface(proxy, 'org.freedesktop.DBus.Properties')
-		return interface.Get('org.bluez.LEAdvertisingManager1', 'SupportedInstances')
+		return self.if_prop.Get('org.bluez.LEAdvertisingManager1'
+			, 'SupportedInstances')
 
 	def start_scan(self):
 		o = self.if_obj_mgr.GetManagedObjects()
