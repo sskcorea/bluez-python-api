@@ -175,15 +175,6 @@ class BPB:
 		return self.if_prop.Get('org.bluez.LEAdvertisingManager1'
 			, 'SupportedInstances')
 
-	def start_scan(self):
-		o = self.if_obj_mgr.GetManagedObjects()
-
-		for path, interfaces in o.iteritems():
-			if "org.bluez.Device1" in interfaces:
-				self.devices[path] = interfaces["org.bluez.Device1"]
-
-		self.if_adapter.StartDiscovery()
-
 	def get_addr(self):
 		return self.if_prop.Get('org.bluez.Adapter1', 'Address')
 
@@ -251,3 +242,27 @@ class BPB:
 
 		self.if_agent_mgr.RegisterAgent('/bpb/agent', capability)
 		self.if_agent_mgr.RequestDefaultAgent('/bpb/agent')
+
+	def start_scan(self):
+		o = self.if_obj_mgr.GetManagedObjects()
+		for path, interfaces in o.iteritems():
+			if "org.bluez.Device1" in interfaces:
+				self.devices[path] = interfaces["org.bluez.Device1"]
+
+		self.if_adapter.StartDiscovery()
+
+	def set_scan_filter(self, filter):
+		f = dict()
+
+		if filter['uuids'] is not None:
+			f['UUIDs'] = dbus.Array(filter['uuids'], signature='s')
+		if filter['rssi'] is not None and filter['pathloss'] is None:
+			f['RSSI'] = dbus.Int16(filter['rssi'])
+		if filter['pathloss'] is not None and filter['rssi'] is None:
+			f['Pathloss'] = dbus.UInt16(filter['pathloss'])
+		if filter['transport'] is not None:
+			f['Transport'] = dbus.String(filter['transport'])
+		if filter['duplicate'] is not None:
+			f['DuplicateData'] = dbus.Boolean(filter['duplicate'])
+
+		self.if_adapter.SetDiscoveryFilter(f)

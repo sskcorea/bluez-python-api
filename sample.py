@@ -27,6 +27,32 @@ adv = {
 	'data': [0x26, [0x01, 0x01, 0x00]],
 }
 
+filter = {
+	'uuids' : None,
+	# only pathloss or rssi can be set, never both
+	'rssi': -80,
+	'pathloss': None, # MAX 137
+	'transport': 'auto', # auto, bredr, le
+	'duplicate': True
+}
+
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-addr', help='get address', action='store_true')
+group.add_argument('-name', help='get name', action='store_true')
+group.add_argument('-alias', help='get alias', action='store_true')
+group.add_argument('-info', help='get adapter info', action='store_true')
+group.add_argument('-discoverable', help='get discoverable',
+	action='store_true')
+group.add_argument('-set', help='set alias, discoverable',
+	action='store', nargs=2, metavar=('key', 'value'))
+parser.add_argument('-scan', help='start discovery', action='store_true')
+parser.add_argument('-adv', help='start advertising', action='store_true')
+parser.add_argument('-agent', help='register agent', action='store_true')
+parser.add_argument('-capa', help='set capability',
+	action='store', choices=['KeyboardDisplay', 'DisplayOnly',
+	'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
+
 def print_device(properties):
 	for key in properties.keys():
 		value = properties[key]
@@ -62,25 +88,9 @@ def main():
 
 	bpb = BPB(cb)
 
-	parser = argparse.ArgumentParser()
-	group = parser.add_mutually_exclusive_group()
-	group.add_argument('-addr', help='get address', action='store_true')
-	group.add_argument('-name', help='get name', action='store_true')
-	group.add_argument('-alias', help='get alias', action='store_true')
-	group.add_argument('-info', help='get adapter info', action='store_true')
-	group.add_argument('-discoverable', help='get discoverable',
-		action='store_true')
-	group.add_argument('-set', help='set alias, discoverable',
-		action='store', nargs=2, metavar=('key', 'value'))
-	parser.add_argument('-scan', help='start discovery', action='store_true')
-	parser.add_argument('-adv', help='start advertising', action='store_true')
-	parser.add_argument('-agent', help='register agent', action='store_true')
-	parser.add_argument('-capa', help='set capability',
-		action='store', choices=['KeyboardDisplay', 'DisplayOnly',
-		'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
 	args = parser.parse_args()
-
 	if (args.scan):
+		bpb.set_scan_filter(filter)
 		bpb.start_scan()
 	elif (args.adv):
 		bpb.set_discoverable('on')
