@@ -1,7 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import dbus
-import bluezutils
 from Advertisement import Advertisement
 from Agent import Agent
 
