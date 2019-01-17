@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import dbus
 from Advertisement import Advertisement
 from Agent import Agent
+from GATT import *
 
 # Bluez Python Bindings
 class BPB:
@@ -39,6 +40,7 @@ class BPB:
 		self.if_prop = dbus.Interface(p3, 'org.freedesktop.DBus.Properties')
 		self.if_adapter = dbus.Interface(p3, 'org.bluez.Adapter1')
 		self.if_le_mgr = dbus.Interface(p3, 'org.bluez.LEAdvertisingManager1')
+		self.if_gatt_mgr = dbus.Interface(p3, 'org.bluez.GattManager1')
 
 		self.advertisements = [None] * self._get_support_inst()
 
@@ -155,7 +157,6 @@ class BPB:
 			'instance': self
 		}
 		self.callback(event)
-
 
 	def _unregister_ad_error_cb(self, error):
 		event = {
@@ -277,3 +278,29 @@ class BPB:
 			f['DuplicateData'] = dbus.Boolean(filter['duplicate'])
 
 		self.if_adapter.SetDiscoveryFilter(f)
+
+	def _register_app_cb(self):
+		print('GATT application registered')
+
+	def _register_app_error_cb(self, error):
+		print('Failed to register application: ' + str(error))
+
+	def register_app(self, app):
+		self.app = Application(self.bus)
+
+		for i, s in enumerate(app['service']):
+			srv = Service(self.bus, i, s['uuid'], s['primary'])
+			for j, c in enumerate(s['characteristic']):
+				chr = Characteristic(self.bus, j, c['uuid'], c['flags'], srv,
+					self.callback)
+				srv.add_characteristic(chr)
+
+			self.app.add_service(srv)
+
+		self.if_gatt_mgr.RegisterApplication(self.app.get_path(), {},
+			reply_handler=self._register_app_cb,
+			error_handler=self._register_app_error_cb)
+
+	def notify(self, value):
+		self.app.get_services()[0].get_characteristics()[0].PropertiesChanged(
+			'org.bluez.GattCharacteristic1', { 'Value': value }, [])

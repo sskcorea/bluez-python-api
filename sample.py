@@ -5,6 +5,7 @@ import dbus.mainloop.glib
 import argparse
 from gi.repository import GObject
 from bpb import BPB
+from random import randint
 
 bpb = None
 
@@ -36,6 +37,33 @@ filter = {
 	'duplicate': True
 }
 
+app = {
+	'service': [{
+		'uuid': '0000180d-0000-1000-8000-00805f9b34fb',
+		'primary': True,
+		'characteristic': [{
+			'uuid': '00002a37-0000-1000-8000-00805f9b34fb',
+			'flags': ['notify']
+		},
+		{
+			'uuid': '00002a38-0000-1000-8000-00805f9b34fb',
+			'flags': ['read']
+		}]
+	},
+	{
+		'uuid': '180f',
+		'primary': True,
+		'characteristic': [{
+			'uuid': '2a19',
+			'flags': ['read', 'notify']
+		},]
+	},]
+}
+
+hr_ee_count = 0
+energy_expended = 0
+notifying = False
+
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument('-addr', help='get address', action='store_true')
@@ -53,6 +81,7 @@ group.add_argument('-set', help='set alias, discoverable, discoverable timeout',
 parser.add_argument('-scan', help='start discovery', action='store_true')
 parser.add_argument('-adv', help='start advertising', action='store_true')
 parser.add_argument('-agent', help='register agent', action='store_true')
+parser.add_argument('-server', help='register gatt server', action='store_true')
 parser.add_argument('-capa', help='set capability',
 	action='store', choices=['KeyboardDisplay', 'DisplayOnly',
 	'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
@@ -67,8 +96,31 @@ def print_device(properties):
 		else:
 			print("    %s = %s" % (key, value))
 
+def hr_msrmt_cb():
+	global hr_ee_count, energy_expended, notifying
+	value = []
+	value.append(dbus.Byte(0x06))
+	value.append(dbus.Byte(randint(90, 130)))
+
+	if hr_ee_count % 10 == 0:
+		value[0] = dbus.Byte(value[0] | 0x08)
+		value.append(dbus.Byte(energy_expended & 0xff))
+		value.append(dbus.Byte((energy_expended >> 8) & 0xff))
+
+	energy_expended = min(0xffff, energy_expended + 1)
+	hr_ee_count += 1
+
+	print('Updating value: ' + repr(value))
+
+	bpb.notify(value)
+
+	return notifying
+
 def cb(evt):
+	global notifying
+
 	print(evt['id'])
+
 	if (evt['id'] == 'device'):
 		print_device(evt['data'])
 	elif (evt['id'] == 'start_adv'):
@@ -83,11 +135,20 @@ def cb(evt):
 			print(evt['error'])
 		else:
 			print(evt['message'])
+	elif (evt['id'] == 'startnotify'):
+		notifying = True
+		GObject.timeout_add(1000, hr_msrmt_cb)
+	elif (evt['id'] == 'stopnotify'):
+		notifying = False
+	elif (evt['id'] == 'readvalue'):
+		evt['response'] = [ 0x01 ]
 	elif (evt['id'] == 'mediacontrol' or evt['id'] == 'mediaplayer' or
 		evt['id'] == 'mediaitem'):
 		print(evt['data'])
 
 def main():
+	global bpb
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bpb = BPB(cb)
@@ -134,6 +195,8 @@ def main():
 		else:
 			pass
 		sys.exit()
+	elif (args.server):
+		bpb.register_app(app)
 	else:
 		sys.exit()
 
