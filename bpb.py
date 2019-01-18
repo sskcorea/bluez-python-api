@@ -291,21 +291,21 @@ class BPB:
 		for i, s in enumerate(app['service']):
 			srv = Service(self.bus, i, s['uuid'], s['primary'])
 
-			for k in s:
-				if (k == 'characteristic'):
-					for ii, c in enumerate(s['characteristic']):
-						chr = Characteristic(self.bus, ii, c['uuid'], c['flags'],
-							srv, self.callback)
-						srv.add_characteristic(chr)
+			if ('characteristic' not in s.keys()):
+				continue
 
-						for k in c:
-							if (k == 'descriptor'):
-								for iii, d in enumerate(c['descriptor']):
-									desc = Descriptor(self.bus, iii, d['uuid'],
-										d['flags'], chr, self.callback)
-									chr.add_descriptor(desc)
-								break
-					break
+			for ii, c in enumerate(s['characteristic']):
+				chr = Characteristic(self.bus, ii, c['uuid'], c['flags'],
+					srv, self.callback)
+				srv.add_characteristic(chr)
+
+				if ('descriptor' not in c.keys()):
+					continue
+
+				for iii, d in enumerate(c['descriptor']):
+					desc = Descriptor(self.bus, iii, d['uuid'], d['flags'], chr,
+						self.callback)
+					chr.add_descriptor(desc)
 
 			self.app.add_service(srv)
 
