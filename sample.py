@@ -44,20 +44,29 @@ app = {
 		'characteristic': [{
 			'uuid': '00002a37-0000-1000-8000-00805f9b34fb',
 			'flags': ['notify']
-		},
-		{
+		}, {
 			'uuid': '00002a38-0000-1000-8000-00805f9b34fb',
 			'flags': ['read']
 		}]
-	},
-	{
+	}, {
 		'uuid': '180f',
 		'primary': True,
 		'characteristic': [{
 			'uuid': '2a19',
 			'flags': ['read', 'notify']
-		},]
-	},]
+		}]
+	}, {
+		'uuid': '12345678-1234-5678-1234-56789abcdef0',
+		'primary': True,
+		'characteristic': [{
+			'uuid': '12345678-1234-5678-1234-56789abcdef1',
+			'flags': ['read', 'write', 'writable-auxiliaries'],
+			'descriptor': [{
+				'uuid': '12345678-1234-5678-1234-56789abcdef2',
+				'flags': ['read', 'write']
+			}]
+		}]
+	}]
 }
 
 hr_ee_count = 0
@@ -141,7 +150,15 @@ def cb(evt):
 	elif (evt['id'] == 'stopnotify'):
 		notifying = False
 	elif (evt['id'] == 'readvalue'):
-		evt['response'] = [ 0x01 ]
+		if (evt['uuid'] == '12345678-1234-5678-1234-56789abcdef1'):
+			evt['response'] = [ 0x01 ]
+		elif (evt['uuid'] == '12345678-1234-5678-1234-56789abcdef2'):
+			evt['response'] = [ 0x02 ]
+		else:
+			evt['response'] = [ 0xff ]
+	elif (evt['id'] == 'writevalue'):
+		print(evt['uuid'])
+		print(evt['value'])
 	elif (evt['id'] == 'mediacontrol' or evt['id'] == 'mediaplayer' or
 		evt['id'] == 'mediaitem'):
 		print(evt['data'])

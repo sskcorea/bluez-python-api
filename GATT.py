@@ -142,6 +142,7 @@ class Characteristic(dbus.service.Object):
 		print('Default ReadValue called')
 		event = {
 			'id': 'readvalue',
+			'uuid': self.uuid,
 			'response': None
 		}
 		self.callback(event)
@@ -154,8 +155,13 @@ class Characteristic(dbus.service.Object):
 
 	@dbus.service.method('org.bluez.GattCharacteristic1', in_signature='aya{sv}')
 	def WriteValue(self, value, options):
-		print('Default WriteValue called, returning error')
-		raise Exception()
+		print('Default WriteValue called')
+		event = {
+			'id': 'writevalue',
+			'uuid': self.uuid,
+			'value': value
+		}
+		self.callback(event)
 
 	@dbus.service.method('org.bluez.GattCharacteristic1')
 	def StartNotify(self):
@@ -183,12 +189,13 @@ class Descriptor(dbus.service.Object):
 	"""
 	org.bluez.GattDescriptor1 interface implementation
 	"""
-	def __init__(self, bus, index, uuid, flags, characteristic):
+	def __init__(self, bus, index, uuid, flags, characteristic, callback):
 		self.path = characteristic.path + '/desc' + str(index)
 		self.bus = bus
 		self.uuid = uuid
 		self.flags = flags
 		self.chrc = characteristic
+		self.callback = callback
 		dbus.service.Object.__init__(self, bus, self.path)
 
 	def get_properties(self):
@@ -216,10 +223,25 @@ class Descriptor(dbus.service.Object):
 						in_signature='a{sv}',
 						out_signature='ay')
 	def ReadValue(self, options):
-		print ('Default ReadValue called, returning error')
-		raise Exception()
+		print ('Default ReadValue called')
+		event = {
+			'id': 'readvalue',
+			'uuid': self.uuid,
+			'response': None
+		}
+		self.callback(event)
+
+		print(event['response'])
+		if event['response'] is not None:
+			return event['response']
+		else:
+			return None
 
 	@dbus.service.method('org.bluez.GattDescriptor1', in_signature='aya{sv}')
 	def WriteValue(self, value, options):
-		print('Default WriteValue called, returning error')
-		raise Exception()
+		event = {
+			'id': 'writevalue',
+			'uuid': self.uuid,
+			'value': value
+		}
+		self.callback(event)
