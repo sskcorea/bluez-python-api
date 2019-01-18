@@ -316,3 +316,19 @@ class BPB:
 	def notify(self, value):
 		self.app.get_services()[0].get_characteristics()[0].PropertiesChanged(
 			'org.bluez.GattCharacteristic1', { 'Value': value }, [])
+
+	def _get_path(self, addr):
+		o = self.if_obj_mgr.GetManagedObjects()
+		for p, v in o.items():
+			for k, v in v.items():
+				if (k == 'org.bluez.Device1'):
+					if (v['Address'] == addr):
+						return p
+
+	def connect(self, addr):
+		dbus.Interface(self.bus.get_object('org.bluez', self._get_path(addr)),
+			'org.bluez.Device1').Connect()
+
+	def disconnect(self, addr):
+		dbus.Interface(self.bus.get_object('org.bluez', self._get_path(addr)),
+			'org.bluez.Device1').Disconnect()
