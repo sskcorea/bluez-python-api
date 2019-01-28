@@ -9,6 +9,6 @@ To run test application:
 ### On Debian-based systems
 
 ```
-apt install python-dbus
-apt install python-gobject
+apt install python-dbus, python-gobject
+python sample.py
 ```
