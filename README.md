@@ -5,10 +5,10 @@ Forget about DBus!
 
 ## Installation
 
-To run test application: 
+So far it has only been tested with <b>Bluez 5.50<b>:
 ### On Debian-based systems
 
 ```
-apt install python-dbus, python-gobject
-python sample.py
+apt install python-dbus, python-gobject -y
+python test.py -h
 ```
