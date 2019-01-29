@@ -325,10 +325,20 @@ class BPB:
 					if (v['Address'] == addr):
 						return p
 
+		return None
+
 	def connect(self, addr):
-		dbus.Interface(self.bus.get_object('org.bluez', self._get_path(addr)),
+		path = self._get_path(addr)
+		if (path is None):
+			raise Exception()
+
+		dbus.Interface(self.bus.get_object('org.bluez', path),
 			'org.bluez.Device1').Connect()
 
 	def disconnect(self, addr):
-		dbus.Interface(self.bus.get_object('org.bluez', self._get_path(addr)),
+		path = self._get_path(addr)
+		if (path is None):
+			raise Exception()
+
+		dbus.Interface(self.bus.get_object('org.bluez', path),
 			'org.bluez.Device1').Disconnect()
