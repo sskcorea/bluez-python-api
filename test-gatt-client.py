@@ -16,7 +16,7 @@ def cb(evt):
 
 def main():
 	global bpb
-
+	device_list = []
 	if len(sys.argv) <= 1:
 		print('put target addr')
 		sys.exit()
@@ -24,7 +24,18 @@ def main():
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bpb = BPB(cb)
-	bpb.connect(sys.argv[1])
+	device_list = bpb.get_device_list()
+
+	if not device_list:
+		print('unkwon device')
+		sys.exit()
+
+	for d in device_list:
+		if (sys.argv[1] == d['Address']):
+			bpb.connect(sys.argv[1])
+		else:
+			print('unkown device')
+			sys.exit()
 
 	mainloop = GObject.MainLoop()
 	mainloop.run()

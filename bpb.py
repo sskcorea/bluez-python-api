@@ -294,6 +294,15 @@ class BPB:
 		self.if_agent_mgr.RegisterAgent('/bpb/agent', capability)
 		self.if_agent_mgr.RequestDefaultAgent('/bpb/agent')
 
+	def get_device_list(self):
+		a = []
+		o = self.if_obj_mgr.GetManagedObjects()
+		for _, interfaces in o.iteritems():
+			if "org.bluez.Device1" in interfaces:
+				a.append(self._parse_device(interfaces['org.bluez.Device1']))
+
+		return a
+
 	def start_scan(self):
 		o = self.if_obj_mgr.GetManagedObjects()
 		for path, interfaces in o.iteritems():
