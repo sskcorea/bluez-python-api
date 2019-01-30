@@ -44,6 +44,40 @@ class BPB:
 
 		self.advertisements = [None] * self._get_support_inst()
 
+	def _parse_device(self, device):
+		d = dict()
+
+		for key in device.keys():
+			if (key == 'ManufacturerData'):
+				a = []
+				md = dict()
+				for id in device[key]:
+					for val in device[key][id]:
+						a.append(bytes(val))
+					md[unicode(id)] = a
+					d[unicode(key)] = md
+			elif (key == 'RSSI'):
+				d[unicode(key)] = int(device[key])
+			elif (key == 'ServicesResolved' or
+				key == 'LegacyPairing' or
+				key == 'TxPower' or
+				key == 'Paired' or
+				key == 'Connected' or
+				key == 'Trusted' or
+				key == 'Blocked'):
+				d[unicode(key)] = bool(device[key])
+			elif (key == 'Adapter'):
+				pass
+			elif (key == 'UUIDs'):
+				a = []
+				for val in device[key]:
+					a.append(unicode(val))
+				d[unicode(key)] = a
+			else:
+				d[unicode(key)] = unicode(device[key])
+
+		return d
+
 	def _interfaces_added_device1(self, path, interfaces):
 		print("_interfaces_added_device1")
 		properties = interfaces["org.bluez.Device1"]
@@ -51,10 +85,11 @@ class BPB:
 			return
 
 		if path in self.devices:
+			print('Does really need this code?')
 			self.devices[path] = dict(self.devices[path].items()
-				+ properties.items())
+				+ self._parse_device(properties).items())
 		else:
-			self.devices[path] = properties
+			self.devices[path] = self._parse_device(properties)
 
 		event = {
 			'id': 'device',
@@ -90,24 +125,28 @@ class BPB:
 				else:
 					pass
 
+	def _properties_changed_device(self, interface, changed, invalidated, path):
+		if path in self.devices:
+			self.devices[path] = dict(self.devices[path].items()
+				+ self._parse_device(changed).items())
+		else:
+			self.devices[path] = self._parse_device(changed)
+
+		event = {
+			'id': 'device',
+			'data': self.devices[path],
+			'instance': self
+		}
+
+		self.callback(event)
+
 	def _properties_changed(self, interface, changed, invalidated, path):
 		print('_properties_changed')
 		print(interface)
 
-		event = None
-
 		if (interface == 'org.bluez.Device1'):
-			if path in self.devices:
-				self.devices[path] = dict(self.devices[path].items()
-					+ changed.items())
-			else:
-				self.devices[path] = changed
-
-			event = {
-				'id': 'device',
-				'data': self.devices[path],
-				'instance': self
-			}
+			self._properties_changed_device(interface, changed, invalidated, path)
+			return
 		elif (interface == 'org.bluez.MediaControl1'):
 			event = {
 				'id': 'mediacontrol',
@@ -194,7 +233,7 @@ class BPB:
 			if "org.bluez.Adapter1" not in interfaces:
 				continue
 
-			return interfaces["org.bluez.Adapter1"]
+			return self._parse_device(interfaces["org.bluez.Adapter1"])
 
 	def get_discoverable(self):
 		return 'true' if self.if_prop.Get('org.bluez.Adapter1', 'Discoverable') \
@@ -259,7 +298,8 @@ class BPB:
 		o = self.if_obj_mgr.GetManagedObjects()
 		for path, interfaces in o.iteritems():
 			if "org.bluez.Device1" in interfaces:
-				self.devices[path] = interfaces["org.bluez.Device1"]
+				self.devices[path] = self._parse_device(
+					interfaces['org.bluez.Device1'])
 
 		self.if_adapter.StartDiscovery()
 

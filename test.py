@@ -3,6 +3,7 @@
 import sys
 import dbus.mainloop.glib
 import argparse
+import pprint
 from gi.repository import GObject
 from bpb import BPB
 from random import randint
@@ -95,16 +96,6 @@ parser.add_argument('-capa', help='set capability',
 	action='store', choices=['KeyboardDisplay', 'DisplayOnly',
 	'DisplayYesNo', 'KeyboardOnly', 'NoInputNoOutput'])
 
-def print_device(properties):
-	for key in properties.keys():
-		value = properties[key]
-		if type(value) is dbus.String:
-			value = unicode(value).encode('ascii', 'replace')
-		if (key == "Class"):
-			print("    %s = 0x%06x" % (key, value))
-		else:
-			print("    %s = %s" % (key, value))
-
 def hr_msrmt_cb():
 	global hr_ee_count, energy_expended, notifying
 	value = []
@@ -131,7 +122,8 @@ def cb(evt):
 	print(evt['id'])
 
 	if (evt['id'] == 'device'):
-		print_device(evt['data'])
+		pprint.pprint(evt['data'])
+		pass
 	elif (evt['id'] == 'start_adv'):
 		if (evt['error'] is not None):
 			print(evt['error'])
@@ -191,7 +183,7 @@ def main():
 		print(bpb.get_alias())
 		sys.exit()
 	elif (args.info):
-		print_device(bpb.get_info())
+		pprint.pprint(bpb.get_info())
 		sys.exit()
 	elif (args.discoverable):
 		print(bpb.get_discoverable())
